@@ -1,10 +1,7 @@
 package com.HuyHoang.controller;
 
 import com.HuyHoang.DTO.request.*;
-import com.HuyHoang.DTO.response.ApiResponse;
-import com.HuyHoang.DTO.response.AuthenticationResponse;
-import com.HuyHoang.DTO.response.IntrospectResponse;
-import com.HuyHoang.DTO.response.LoginResponse;
+import com.HuyHoang.DTO.response.*;
 import com.HuyHoang.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 import lombok.AccessLevel;
@@ -31,15 +28,15 @@ public class AuthenticationController {
                 .build();
     }
 
-//    @PostMapping("/login")
-//    ApiResponse<LoginResponse> login(@RequestBody LoginRequest request){
-//
-//        return ApiResponse.<LoginResponse>builder()
-//                .result(
-//                        authenticationService.login(request)
-//                )
-//                .build();
-//    }
+    @PostMapping("/login")
+    ApiResponse<LoginResponse> login(@RequestBody LoginRequest request){
+
+        return ApiResponse.<LoginResponse>builder()
+                .result(
+                        authenticationService.login(request)
+                )
+                .build();
+    }
 
     @PostMapping("/introspect")
     ApiResponse<IntrospectResponse> authentication(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
@@ -49,25 +46,32 @@ public class AuthenticationController {
                 .build();
     }
 
-    @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request)
-            throws ParseException, JOSEException {
-        return ApiResponse.<AuthenticationResponse>builder()
-                .result(authenticationService.refreshToken(request))
-                .build();
-    }
-    @PostMapping("/logout")
-    ApiResponse<Void> logout(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
-        authenticationService.logout(request);
-        return ApiResponse.<Void>builder().build();
-    }
-
-//    @PostMapping("/logout")
-//    ApiResponse<Void> logout(@RequestHeader("Authorization") LogoutRequest request) throws ParseException, JOSEException {
-//        log.info("token:{}", request.getToken());
-//        String token = request.getToken().replace("Bearer ", "");
-//        authenticationService.logout(token);
-//        return ApiResponse.<Void>builder()
+//    @PostMapping("/refresh")
+//    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request)
+//            throws ParseException, JOSEException {
+//        return ApiResponse.<AuthenticationResponse>builder()
+//                .result(authenticationService.refreshToken(request))
 //                .build();
 //    }
+    @PostMapping("/refresh-token")
+    public ApiResponse<TokenResponse> refreshToken(@RequestBody RefreshTokenRequest request) throws ParseException, JOSEException {
+        TokenResponse response = authenticationService.refreshJwtToken(request);
+        return ApiResponse.<TokenResponse>builder()
+                .result(response)
+                .build();
+    }
+//    @PostMapping("/logout")
+//    ApiResponse<Void> logout(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
+//        authenticationService.logout(request);
+//        return ApiResponse.<Void>builder().build();
+//    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(@RequestHeader("Authorization") LogoutRequest request) throws ParseException, JOSEException {
+        log.info("token:{}", request.getToken());
+        String token = request.getToken().replace("Bearer ", "");
+        authenticationService.logout(token);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
 }

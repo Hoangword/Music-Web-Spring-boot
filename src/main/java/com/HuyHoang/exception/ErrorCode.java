@@ -25,7 +25,15 @@ public enum ErrorCode {
     PLAYLIST_NOT_EXISTED(1011, "Playlist have not been existed ",HttpStatus.NOT_FOUND),
     INVALID_DOB(1012, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
     ROLE_NOT_EXISTED(1013," Role not existed", HttpStatus.NOT_FOUND),
-    INVALID_TOKEN(1014," Invalid Token", HttpStatus.BAD_REQUEST)
+    INVALID_TOKEN(1014," Invalid Token", HttpStatus.BAD_REQUEST),
+    INVALID_REFRESH_TOKEN(1015, "Invalid refresh Token", HttpStatus.BAD_REQUEST),
+    REFRESH_TOKEN_NOT_EXISTED(1016, "refresh Token not found", HttpStatus.NOT_FOUND),
+    REDIS_TOKEN_NOT_EXISTED(1017, "Redis Token not found", HttpStatus.NOT_FOUND),
+    TOKEN_ALREADY_EXPIRED(1018, "Token already expired for user",HttpStatus.BAD_REQUEST ),
+    OTP_OR_USER_INVALID(1019, "wrong otp or user ",HttpStatus.NOT_FOUND),
+    OTP_ALREADY_EXPIRED(1020,"Otp has expired",HttpStatus.BAD_REQUEST),
+    PASSWORD_INCORRECT(1021, "Please enter the password again!",HttpStatus.EXPECTATION_FAILED),
+    EMAIL_INVALID(1022, "email not existed",HttpStatus.NOT_FOUND)
     ;
     int code;
     String message;

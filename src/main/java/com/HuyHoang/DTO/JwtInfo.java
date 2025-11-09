@@ -12,6 +12,7 @@ import java.util.Date;
 @Builder
 public class JwtInfo implements Serializable {
     private String jwtId;
+    private String username;
     private Date issueTime;
     private Date expiredTime;
 }

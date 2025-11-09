@@ -3,6 +3,8 @@ package com.HuyHoang.Entity;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,7 +30,9 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     String username;
 
+    @NotBlank(message = "Email khong duoc de trong")
     @Column(unique = true, nullable = false)
+    @Email(message = "Hay dien email hop le")
     String email;
 
     String firstName;
@@ -40,7 +44,8 @@ public class User implements UserDetails {
 
     LocalDate dob;
 
-
+    @OneToOne(mappedBy = "user")
+    ForgotPassword forgotPassword;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Playlist> playlists;

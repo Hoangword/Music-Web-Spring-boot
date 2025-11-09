@@ -4,6 +4,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.TimeToLive;
+import org.springframework.data.redis.core.index.Indexed;
 
 import java.util.concurrent.TimeUnit;
 
@@ -11,13 +12,17 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@RedisHash("RedisHas")
 @Builder
 public class RedisToken {
 
-    @Id
-    private String jwtId;
 
-    @TimeToLive(unit = TimeUnit.SECONDS)
+    private String accessTokenId;
+
+    private String userId;
+
+    private String refreshTokenId;
+
     private long expiredTime;
+
+
 }

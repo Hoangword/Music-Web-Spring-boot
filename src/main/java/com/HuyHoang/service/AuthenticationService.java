@@ -3,9 +3,7 @@ package com.HuyHoang.service;
 import com.HuyHoang.DTO.JwtInfo;
 import com.HuyHoang.DTO.TokenPayload;
 import com.HuyHoang.DTO.request.*;
-import com.HuyHoang.DTO.response.AuthenticationResponse;
-import com.HuyHoang.DTO.response.IntrospectResponse;
-import com.HuyHoang.DTO.response.LoginResponse;
+import com.HuyHoang.DTO.response.*;
 import com.HuyHoang.Entity.InvalidedToken;
 import com.HuyHoang.Entity.RedisToken;
 import com.HuyHoang.Entity.User;
@@ -25,6 +23,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -38,9 +37,8 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -49,7 +47,7 @@ import java.util.UUID;
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidedTokenRepository invalidedTokenRepository;
-
+    RedisTemplate<String, Object> redisTemplate;
 
     private final JwtService jwtService;
     // PzVoW4QmWUOmIkLkS3eZwOshHeXG3bQcRh38eXw3qjWxgdCBOFVxcO+xlCoaoQha
@@ -65,29 +63,51 @@ public class AuthenticationService {
     @Value("${jwt.refreshable-duration}")
     protected long REFRESHABLE_DURATION;
 
-//    private final  AuthenticationManager authenticationManager;
-//
+    private final  AuthenticationManager authenticationManager;
+
 //    private final RedisTokenRepository redisTokenRepository;
-//    public LoginResponse login(LoginRequest request){
-//        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(request.getUsername(),request.getPassword());
-//        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
-//
-//        User user = (User) authenticate.getPrincipal();
-//        TokenPayload accessPayload = jwtService.generateAccessToken(user);
-//        TokenPayload refreshPayload = jwtService.generateRefreshToken(user);
-//
-//        redisTokenRepository.save(
-//            RedisToken.builder()
-//                    .jwtId(refreshPayload.getJwtId())
-//                    .expiredTime(refreshPayload.getExpiredTime().getTime())
-//                    .build()
-//        );
-//
-//        return LoginResponse.builder()
-//                .accessToken(accessPayload.getToken())
-//                .refreshToken(refreshPayload.getToken())
-//                .build();
-//    }
+    public LoginResponse login(LoginRequest request){
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(request.getUsername(),request.getPassword());
+        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
+
+        User user = (User) authenticate.getPrincipal();
+        TokenPayload accessPayload = jwtService.generateAccessToken(user);
+        TokenPayload refreshPayload = jwtService.generateRefreshToken(user);
+
+
+        long accessTtlSeconds =
+                (accessPayload.getExpiredTime().getTime() - System.currentTimeMillis()) / 1000;
+
+        long refreshTtlSeconds =
+                (refreshPayload.getExpiredTime().getTime() - System.currentTimeMillis()) / 1000;
+
+        RedisToken redisToken =RedisToken.builder()
+                .userId(user.getId())
+                .accessTokenId(accessPayload.getJwtId())
+                .refreshTokenId(refreshPayload.getJwtId())
+                .expiredTime(refreshTtlSeconds)
+                .build();
+
+        redisTemplate.opsForValue().set(
+                "accessToken:" + redisToken.getAccessTokenId(),
+                redisToken,
+                accessTtlSeconds,
+                TimeUnit.SECONDS
+        );
+
+
+        redisTemplate.opsForValue().set(
+                "refreshToken:" + redisToken.getRefreshTokenId(),
+                redisToken.getAccessTokenId(),
+                refreshTtlSeconds,
+                TimeUnit.SECONDS
+        );
+
+        return LoginResponse.builder()
+                .accessToken(accessPayload.getToken())
+                .refreshToken(refreshPayload.getToken())
+                .build();
+    }
 
     public IntrospectResponse introspect(IntrospectRequest request)
             throws JOSEException, ParseException {
@@ -124,25 +144,6 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
-        var signedJWT = verifyToken(request.getToken(),true);
-
-        String jit = signedJWT.getJWTClaimsSet().getJWTID();
-        Date expireTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        invalidedTokenRepository.save(InvalidedToken.builder().id(jit).expiryTime(expireTime).build());
-
-        var user = userRepository.findByUsername(signedJWT.getJWTClaimsSet().getSubject())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        var token = generateToken(user);
-
-        return AuthenticationResponse.builder()
-                .token(token)
-                .authenticated(true)
-                .build();
-
-    }
     public String generateToken(User user){
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
 
@@ -171,36 +172,133 @@ public class AuthenticationService {
 
 
 
-    public void logout(LogoutRequest request) throws ParseException, JOSEException {
+//    public void logout(LogoutRequest request) throws ParseException, JOSEException {
+//
+//        try{
+//            var signToken = verifyToken(request.getToken(),true);
+//
+//            String jit = signToken.getJWTClaimsSet().getJWTID();
+//            Date expireTime = signToken.getJWTClaimsSet().getExpirationTime();
+//
+//            invalidedTokenRepository.save(InvalidedToken.builder()
+//                    .id(jit)
+//                    .expiryTime(expireTime)
+//                    .build());
+//        }catch (AppException e){
+//            log.info("token already expired");
+//        }
+//    }
+//
 
+    public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
+        var signedJWT = verifyToken(request.getToken(),true);
+
+        String jit = signedJWT.getJWTClaimsSet().getJWTID();
+        Date expireTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        invalidedTokenRepository.save(InvalidedToken.builder().id(jit).expiryTime(expireTime).build());
+
+        var user = userRepository.findByUsername(signedJWT.getJWTClaimsSet().getSubject())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        var token = generateToken(user);
+
+        return AuthenticationResponse.builder()
+                .token(token)
+                .authenticated(true)
+                .build();
+
+    }
+    public TokenResponse refreshJwtToken(RefreshTokenRequest request) throws ParseException, JOSEException {
+        String refreshToken = request.getRefreshToken();
+
+        // 1️⃣ Xác minh refresh token hợp lệ
+        TokenVerificationResponse verificationResponse = jwtService.verifyJwtToken(refreshToken);
+        if (!verificationResponse.isValid()) {
+            log.info("Lỗi refreshtoken không hợp lệ");
+            log.info(verificationResponse.getErrorMessage());
+            throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        String username = verificationResponse.getUsername();
+        String refreshTokenId = verificationResponse.getJwtId();
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         try{
-            var signToken = verifyToken(request.getToken(),true);
 
-            String jit = signToken.getJWTClaimsSet().getJWTID();
-            Date expireTime = signToken.getJWTClaimsSet().getExpirationTime();
+        String accessTokenId = (String) redisTemplate.opsForValue()
+                .get("refreshToken:" + refreshTokenId);
 
-            invalidedTokenRepository.save(InvalidedToken.builder()
-                    .id(jit)
-                    .expiryTime(expireTime)
-                    .build());
-        }catch (AppException e){
-            log.info("token already expired");
+        RedisToken redisToken = (RedisToken) redisTemplate.opsForValue()
+                .get("accessToken:" + accessTokenId);
+
+        redisTemplate.delete("accessToken:" + redisToken.getAccessTokenId());
+        redisTemplate.delete("refreshToken:" + redisToken.getRefreshTokenId());
+
+
+        TokenPayload newAccessToken = jwtService.generateAccessToken(user);
+        TokenPayload newRefreshToken = jwtService.generateRefreshToken(user);
+
+        long accessTtlSeconds = (newAccessToken.getExpiredTime().getTime() - System.currentTimeMillis()) / 1000;
+
+        long refreshTtlSeconds = (newRefreshToken.getExpiredTime().getTime() - System.currentTimeMillis()) / 1000;
+        redisToken.setAccessTokenId(newAccessToken.getJwtId());
+        redisToken.setRefreshTokenId(newRefreshToken.getJwtId());
+        redisToken.setUserId(user.getId());
+        redisToken.setExpiredTime(refreshTtlSeconds);
+
+
+
+        redisTemplate.opsForValue().set(
+                    "accessToken:" + redisToken.getAccessTokenId(),
+                    redisToken,
+                    accessTtlSeconds,
+                    TimeUnit.SECONDS
+        );
+
+        redisTemplate.opsForValue().set(
+                    "refreshToken:" + redisToken.getRefreshTokenId(),
+                    redisToken.getAccessTokenId(),
+                    refreshTtlSeconds,
+                    TimeUnit.SECONDS
+        );
+
+            // Trả về response
+        return TokenResponse.builder()
+                .accessToken(newAccessToken.getToken())
+                .refreshToken(newRefreshToken.getToken())
+                .build();
+        }catch (Exception e){
+            throw new AppException(ErrorCode.TOKEN_ALREADY_EXPIRED);
         }
     }
-//
-//    public void logout(String token) throws ParseException {
-//        JwtInfo jwtInfo =  jwtService.parseToken(token);
-//        if(jwtInfo.getExpiredTime().before(new Date())){
-//            return;
-//        }
-//        Date now = new Date();
-//        RedisToken redisToken = RedisToken.builder()
-//                .jwtId(jwtInfo.getJwtId())
-//                .expiredTime(jwtInfo.getExpiredTime().getTime() - now.getTime())
-//                .build();
-//        redisTokenRepository.save(redisToken);
-//        log.info("Logout success");
-//    }
+
+
+    public void logout(String accessToken) throws ParseException {
+       try{
+
+        JwtInfo jwtInfo =  jwtService.parseToken(accessToken);
+        if(jwtInfo.getExpiredTime().before(new Date())){
+            throw new AppException(ErrorCode.TOKEN_ALREADY_EXPIRED);
+        }
+
+
+
+           RedisToken redisToken = (RedisToken) redisTemplate.opsForValue()
+                   .get("accessToken:" + jwtInfo.getJwtId());
+
+           redisTemplate.delete("accessToken:" + redisToken.getAccessTokenId());
+           redisTemplate.delete("refreshToken:" + redisToken.getRefreshTokenId());
+
+
+
+
+        log.info("Logout success");
+       }catch(Exception e){
+           log.error("Có lỗi trong quá trình logout: {}", e.getMessage());
+           log.info("token already expired");
+           throw new AppException(ErrorCode.TOKEN_ALREADY_EXPIRED);
+       }
+    }
 
     private SignedJWT verifyToken(String token, boolean checkRefresh) throws JOSEException, ParseException {
             JWSVerifier jwsVerifier = new MACVerifier(SIGNER_KEY.getBytes());

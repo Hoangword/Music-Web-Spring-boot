@@ -39,7 +39,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS = {
-            "/users","/auth/token", "/auth/introspect", "/auth/logout", "auth/refresh", "auth/login"
+            "/users","/auth/token", "/auth/introspect", "/auth/logout", "auth/refresh", "auth/login" , "auth/refresh-token", "/forgotPassword/**"
     };
 
     private final String[] PUBLIC_ENDPOINTS_GET = {
