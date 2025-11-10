@@ -210,15 +210,15 @@ public class AuthenticationService {
         return token.toString();
     }
 
-    public void verifyRegisterEmail(VerifyEmailRequest request, VerifyOtpRequest otp) {
-        User user = userRepository.findByEmail(request.getEmail())
+    public void verifyRegisterEmail(String email, String otp) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Email not found"));
 
         if (user.getEmailVerificationTokenExpiryDate().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Verification code has expired");
         }
 
-        if (passwordEncoder.matches(otp.getOtp(), user.getEmailVerificationToken())) {
+        if (passwordEncoder.matches(otp, user.getEmailVerificationToken())) {
             user.setEmailVerified(true);
             user.setEmailVerificationToken(null);
             user.setEmailVerificationTokenExpiryDate(null);

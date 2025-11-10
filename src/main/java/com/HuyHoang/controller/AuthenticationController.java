@@ -38,14 +38,14 @@ public class AuthenticationController {
                 .build();
     }
 
-    @PostMapping("/register")
-    ApiResponse<RegisterResponse> register(@RequestBody RegisterRequest request){
-        return ApiResponse.<RegisterResponse>builder()
-                .result(authenticationService.register(request))
-                .build();
-    }
+//    @PostMapping("/register")
+//    ApiResponse<RegisterResponse> register(@RequestBody RegisterRequest request){
+//        return ApiResponse.<RegisterResponse>builder()
+//                .result(authenticationService.register(request))
+//                .build();
+//    }
 
-    @PostMapping("/register-with-verifiedEmail")
+    @PostMapping("/register")
     ApiResponse<String> registerWithEmailVerify(@RequestBody RegisterRequest request){
         return ApiResponse.<String>builder()
                 .result(authenticationService.registerWithEmailVerify(request))
@@ -53,8 +53,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/verify-register-email")
-    public ApiResponse<String> verifyEmail(@RequestBody VerifyEmailRequest request, @RequestBody VerifyOtpRequest otp) {
-        authenticationService.verifyRegisterEmail(request, otp );
+    public ApiResponse<String> verifyEmail(@RequestBody EmailOtpVerifyRequest request) {
+        authenticationService.verifyRegisterEmail(request.getEmail(), request.getOtp() );
         return ApiResponse.<String>builder()
                 .result(
                         "Email verified successfully."

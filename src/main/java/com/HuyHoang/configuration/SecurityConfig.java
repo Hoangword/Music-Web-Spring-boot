@@ -39,8 +39,12 @@ import javax.crypto.spec.SecretKeySpec;
 public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS = {
-            "/users","/auth/token", "/auth/introspect", "/auth/logout", "auth/refresh", "auth/login" , "auth/refresh-token", "/forgotPassword/**"
+           "auth/**", "/users", "/forgotPassword/**"
     };
+
+//    private final String[]  PUBLIC_ENDPOINTS = {
+//            "auth/**", "/users","/auth/token", "/auth/introspect", "/auth/logout", "auth/refresh", "auth/login" , "auth/refresh-token", "/forgotPassword/**"
+//    };
 
     private final String[] PUBLIC_ENDPOINTS_GET = {
             "/api/spotify/track","/api/spotify/search","/api/**"
