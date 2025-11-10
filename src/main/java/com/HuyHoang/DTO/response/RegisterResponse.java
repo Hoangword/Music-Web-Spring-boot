@@ -1,4 +1,4 @@
-package com.HuyHoang.DTO.request;
+package com.HuyHoang.DTO.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -9,6 +9,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class VerifyOtpRequest {
-    private String otp;
+public class RegisterResponse {
+    String id;
+    String username;
+    String email;
+    String firstName;
+    String lastName;
 }

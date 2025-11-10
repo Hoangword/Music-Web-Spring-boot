@@ -9,16 +9,22 @@ import com.HuyHoang.exception.AppException;
 import com.HuyHoang.exception.ErrorCode;
 import com.HuyHoang.repository.ForgotPasswordRepository;
 import com.HuyHoang.repository.UserRepository;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -55,10 +61,31 @@ public class EmailService {
         javaMailSender.send(message);
     }
 
+    public void sendEmail(String to, String subject, String body) {
+        try{
+            MimeMessage mimeMessage=javaMailSender.createMimeMessage();
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(
+                    mimeMessage,"utf-8"
+            );
+            mimeMessageHelper.setSubject(subject);
+            mimeMessageHelper.setText(body);
+            mimeMessageHelper.setTo(to);
+            javaMailSender.send(mimeMessage);
+
+        }catch(MailException e){
+
+            throw  new MailSendException("failed to send email");
+
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     public String verifyEmail(String email){
 
         User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        int otp = otpGenerator();
+        String otp = otpGenerator();
         forgotPasswordRepository.findByUser(user).ifPresent(forgotPassword -> forgotPasswordRepository.deleteById(forgotPassword.getFpid()));
 
         ForgotPassword forgotPassword = ForgotPassword.builder()
@@ -77,10 +104,15 @@ public class EmailService {
         sendSimpleMessage(mailBody);
         return "OTP da duoc gui den email cua ban.";
     }
-    private Integer otpGenerator() {
-        Random random = new Random();
-        return random.nextInt(100_000,999_999);
+    private String otpGenerator() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder token = new StringBuilder(5);
+        for (int i = 0; i < 5; i++) {
+            token.append(random.nextInt(10));
+        }
+        return token.toString();
     }
+
 
     public String changePasswordHandler(ChangePasswordRequest request, String email){
         if(!Objects.equals(request.password(),request.repeatPassword())){

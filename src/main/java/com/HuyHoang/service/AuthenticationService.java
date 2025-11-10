@@ -6,11 +6,14 @@ import com.HuyHoang.DTO.request.*;
 import com.HuyHoang.DTO.response.*;
 import com.HuyHoang.Entity.InvalidedToken;
 import com.HuyHoang.Entity.RedisToken;
+import com.HuyHoang.Entity.Role;
 import com.HuyHoang.Entity.User;
 import com.HuyHoang.exception.AppException;
 import com.HuyHoang.exception.ErrorCode;
+import com.HuyHoang.mapper.UserMapper;
 import com.HuyHoang.repository.InvalidedTokenRepository;
 import com.HuyHoang.repository.RedisTokenRepository;
+import com.HuyHoang.repository.RoleRepository;
 import com.HuyHoang.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -33,6 +36,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -63,7 +67,14 @@ public class AuthenticationService {
     @Value("${jwt.refreshable-duration}")
     protected long REFRESHABLE_DURATION;
 
+    private final int TOKEN_EXPIRY_MINUTES = 10;
+
+    UserMapper userMapper;
+
+    PasswordEncoder passwordEncoder;
     private final  AuthenticationManager authenticationManager;
+    private final RoleRepository roleRepository;
+    private final EmailService emailService;
 
 //    private final RedisTokenRepository redisTokenRepository;
     public LoginResponse login(LoginRequest request){
@@ -108,6 +119,111 @@ public class AuthenticationService {
                 .refreshToken(refreshPayload.getToken())
                 .build();
     }
+
+    public RegisterResponse register(RegisterRequest request){
+
+        if(userRepository.existsByUsername(request.getUsername())){
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
+        if(userRepository.findByEmail(request.getEmail()).isPresent()){
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTED);
+        }
+
+
+        User user = userMapper.toUser(request);
+
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        Role role = roleRepository.findByName("USER")
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+
+        user.setRoles(roles);
+
+        userRepository.save(user);
+
+        return userMapper.tuRegisterResponse(user);
+    }
+
+
+    public String registerWithEmailVerify(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        if(userRepository.findByEmail(request.getEmail()).isPresent()){
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTED);
+        }
+
+        // Tạo user chưa kích hoạt
+        User user = userMapper.toUser(request);
+
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        Role role = roleRepository.findByName("USER")
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+
+        user.setRoles(roles);
+
+        // Sinh mã xác thực email (OTP)
+        String otp = generateEmailVerificationToken();
+        String hashedOtp = passwordEncoder.encode(otp);
+
+        user.setEmailVerificationToken(hashedOtp);
+        user.setEmailVerificationTokenExpiryDate(LocalDateTime.now().plusMinutes(TOKEN_EXPIRY_MINUTES));
+
+        userRepository.save(user);
+
+        // Gửi email xác thực
+        String subject = "Verify your email address";
+        String body = String.format("""
+                Chào %s,
+
+                Đây là mã xác thực tài khoản của bạn: %s
+                Mã này sẽ hết hạn sau %d phút.
+
+                Cảm ơn bạn đã đăng ký!
+                """, request.getUsername(), otp, TOKEN_EXPIRY_MINUTES);
+
+        try {
+            emailService.sendEmail(request.getEmail(), subject, body);
+        } catch (Exception e) {
+            log.error("Error while sending email: {}", e.getMessage());
+        }
+
+        return ("User registered. Please verify your email.");
+    }
+
+    private String generateEmailVerificationToken() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder token = new StringBuilder(5);
+        for (int i = 0; i < 5; i++) {
+            token.append(random.nextInt(10));
+        }
+        return token.toString();
+    }
+
+    public void verifyRegisterEmail(VerifyEmailRequest request, VerifyOtpRequest otp) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Email not found"));
+
+        if (user.getEmailVerificationTokenExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification code has expired");
+        }
+
+        if (passwordEncoder.matches(otp.getOtp(), user.getEmailVerificationToken())) {
+            user.setEmailVerified(true);
+            user.setEmailVerificationToken(null);
+            user.setEmailVerificationTokenExpiryDate(null);
+            userRepository.save(user);
+        } else {
+            throw new RuntimeException("Invalid verification code");
+        }
+    }
+
 
     public IntrospectResponse introspect(IntrospectRequest request)
             throws JOSEException, ParseException {

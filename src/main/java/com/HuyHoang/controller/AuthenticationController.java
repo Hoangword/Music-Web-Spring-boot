@@ -20,13 +20,13 @@ import java.text.ParseException;
 public class AuthenticationController {
     AuthenticationService authenticationService;
 
-    @PostMapping("/token")
-    ApiResponse<AuthenticationResponse> authentication(@RequestBody AuthenticationRequest request){
-        var result = authenticationService.authenticate(request);
-        return ApiResponse.<AuthenticationResponse>builder()
-                .result(result)
-                .build();
-    }
+//    @PostMapping("/token")
+//    ApiResponse<AuthenticationResponse> authentication(@RequestBody AuthenticationRequest request){
+//        var result = authenticationService.authenticate(request);
+//        return ApiResponse.<AuthenticationResponse>builder()
+//                .result(result)
+//                .build();
+//    }
 
     @PostMapping("/login")
     ApiResponse<LoginResponse> login(@RequestBody LoginRequest request){
@@ -38,13 +38,38 @@ public class AuthenticationController {
                 .build();
     }
 
-    @PostMapping("/introspect")
-    ApiResponse<IntrospectResponse> authentication(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
-        var result = authenticationService.introspect(request);
-        return ApiResponse.<IntrospectResponse>builder()
-                .result(result)
+    @PostMapping("/register")
+    ApiResponse<RegisterResponse> register(@RequestBody RegisterRequest request){
+        return ApiResponse.<RegisterResponse>builder()
+                .result(authenticationService.register(request))
                 .build();
     }
+
+//    @PostMapping("/register")
+//    ApiResponse<RegisterResponse> register(@RequestBody RegisterRequest request){
+//        return ApiResponse.<RegisterResponse>builder()
+//                .result(authenticationService.registerWithEmailVerify(request))
+//                .build();
+//    }
+
+    @PostMapping("/verify-register-email")
+    public ApiResponse<String> verifyEmail(@RequestBody VerifyEmailRequest request, @RequestBody VerifyOtpRequest otp) {
+        authenticationService.verifyRegisterEmail(request, otp );
+        return ApiResponse.<String>builder()
+                .result(
+                        "Email verified successfully."
+                )
+                .build();
+    }
+
+
+//    @PostMapping("/introspect")
+//    ApiResponse<IntrospectResponse> authentication(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
+//        var result = authenticationService.introspect(request);
+//        return ApiResponse.<IntrospectResponse>builder()
+//                .result(result)
+//                .build();
+//    }
 
 //    @PostMapping("/refresh")
 //    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request)
