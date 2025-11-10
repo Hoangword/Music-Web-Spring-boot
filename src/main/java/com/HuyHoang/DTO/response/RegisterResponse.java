@@ -15,4 +15,5 @@ public class RegisterResponse {
     String email;
     String firstName;
     String lastName;
+    String message;
 }

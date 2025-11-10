@@ -63,13 +63,13 @@ public class User implements UserDetails {
     @ManyToMany
     Set<Role> roles;
 
-    @Column
+
     private String emailVerificationToken;
 
-    @Column
+
     private LocalDateTime emailVerificationTokenExpiryDate;
 
-    @Column
+
     private boolean emailVerified = false;
 
     @Override

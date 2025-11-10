@@ -34,7 +34,8 @@ public enum ErrorCode {
     OTP_ALREADY_EXPIRED(1020,"Otp has expired",HttpStatus.BAD_REQUEST),
     PASSWORD_INCORRECT(1021, "Please enter the password again!",HttpStatus.EXPECTATION_FAILED),
     EMAIL_INVALID(1022, "email not existed",HttpStatus.NOT_FOUND),
-    EMAIL_ALREADY_EXISTED(1023, "email has been used" , HttpStatus.BAD_REQUEST)
+    EMAIL_ALREADY_EXISTED(1023, "email has been used" , HttpStatus.BAD_REQUEST),
+    EMAIL_UNVERIFIED(1024, "Email has not been verified. Please check your email to verify your account ",HttpStatus.EXPECTATION_FAILED)
     ;
     int code;
     String message;

@@ -45,12 +45,12 @@ public class AuthenticationController {
                 .build();
     }
 
-//    @PostMapping("/register")
-//    ApiResponse<RegisterResponse> register(@RequestBody RegisterRequest request){
-//        return ApiResponse.<RegisterResponse>builder()
-//                .result(authenticationService.registerWithEmailVerify(request))
-//                .build();
-//    }
+    @PostMapping("/register-with-verifiedEmail")
+    ApiResponse<RegisterResponse> registerWithEmailVerify(@RequestBody RegisterRequest request){
+        return ApiResponse.<RegisterResponse>builder()
+                .result(authenticationService.registerWithEmailVerify(request))
+                .build();
+    }
 
     @PostMapping("/verify-register-email")
     public ApiResponse<String> verifyEmail(@RequestBody VerifyEmailRequest request, @RequestBody VerifyOtpRequest otp) {

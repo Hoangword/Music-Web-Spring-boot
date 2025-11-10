@@ -86,6 +86,10 @@ public class AuthenticationService {
         TokenPayload refreshPayload = jwtService.generateRefreshToken(user);
 
 
+        if (!user.isEmailVerified()) {
+            throw new AppException(ErrorCode.EMAIL_UNVERIFIED);
+        }
+
         long accessTtlSeconds =
                 (accessPayload.getExpiredTime().getTime() - System.currentTimeMillis()) / 1000;
 

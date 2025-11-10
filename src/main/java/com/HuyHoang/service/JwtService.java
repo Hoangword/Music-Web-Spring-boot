@@ -52,7 +52,7 @@ public class JwtService {
 
         Date issueTime = new Date();
         Date expireTime = new Date(
-                Instant.now().plus(20, ChronoUnit.SECONDS).toEpochMilli()
+                Instant.now().plus(1200, ChronoUnit.SECONDS).toEpochMilli()
         );
         String jwtId = UUID.randomUUID().toString();
 
@@ -87,7 +87,7 @@ public class JwtService {
 
         Date issueTime = new Date();
         Date expireTime = new Date(
-                Instant.now().plus(100, ChronoUnit.SECONDS).toEpochMilli()
+                Instant.now().plus(3600, ChronoUnit.SECONDS).toEpochMilli()
         );
         String jwtId = UUID.randomUUID().toString();
 

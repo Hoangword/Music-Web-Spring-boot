@@ -136,7 +136,7 @@ public class EmailService {
         return "Password has been changed";
     }
 
-    public String verifyOtpAndUser(Integer Otp , String email){
+    public String verifyOtpAndUser(String Otp , String email){
         User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.EMAIL_INVALID));
         ForgotPassword forgotPassword = forgotPasswordRepository.findByOtpAndUser(Otp,user).orElseThrow(() -> new AppException(ErrorCode.OTP_OR_USER_INVALID));
 
