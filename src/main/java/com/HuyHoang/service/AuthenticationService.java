@@ -124,31 +124,6 @@ public class AuthenticationService {
                 .build();
     }
 
-    public RegisterResponse register(RegisterRequest request){
-
-        if(userRepository.existsByUsername(request.getUsername())){
-            throw new AppException(ErrorCode.USER_EXISTED);
-        }
-        if(userRepository.findByEmail(request.getEmail()).isPresent()){
-            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTED);
-        }
-
-
-        User user = userMapper.toUser(request);
-
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-
-        Role role = roleRepository.findByName("USER")
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
-        Set<Role> roles = new HashSet<>();
-        roles.add(role);
-
-        user.setRoles(roles);
-
-        userRepository.save(user);
-
-        return userMapper.tuRegisterResponse(user);
-    }
 
 
     public String registerWithEmailVerify(RegisterRequest request) {
