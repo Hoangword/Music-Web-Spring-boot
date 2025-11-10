@@ -46,8 +46,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register-with-verifiedEmail")
-    ApiResponse<RegisterResponse> registerWithEmailVerify(@RequestBody RegisterRequest request){
-        return ApiResponse.<RegisterResponse>builder()
+    ApiResponse<String> registerWithEmailVerify(@RequestBody RegisterRequest request){
+        return ApiResponse.<String>builder()
                 .result(authenticationService.registerWithEmailVerify(request))
                 .build();
     }
