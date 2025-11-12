@@ -4,6 +4,7 @@ import com.HuyHoang.DTO.request.*;
 import com.HuyHoang.DTO.response.*;
 import com.HuyHoang.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -46,18 +47,17 @@ public class AuthenticationController {
 //    }
 
     @PostMapping("/register")
-    ApiResponse<String> registerWithEmailVerify(@RequestBody RegisterRequest request){
-        return ApiResponse.<String>builder()
+    ApiResponse<RegisterEmailVeirifyResponse> registerWithEmailVerify(@RequestBody @Valid RegisterRequest request){
+        return ApiResponse.<RegisterEmailVeirifyResponse>builder()
                 .result(authenticationService.registerWithEmailVerify(request))
                 .build();
     }
 
     @PostMapping("/verify-register-email")
-    public ApiResponse<String> verifyEmail(@RequestBody EmailOtpVerifyRequest request) {
-        authenticationService.verifyRegisterEmail(request.getEmail(), request.getOtp() );
-        return ApiResponse.<String>builder()
+    public ApiResponse<VerifyEmailResponse> verifyEmail(@RequestBody EmailOtpVerifyRequest request) {
+        return ApiResponse.<VerifyEmailResponse>builder()
                 .result(
-                        "Email verified successfully."
+        authenticationService.verifyRegisterEmail(request.getEmail(), request.getOtp() )
                 )
                 .build();
     }

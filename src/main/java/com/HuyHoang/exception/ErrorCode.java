@@ -35,7 +35,8 @@ public enum ErrorCode {
     PASSWORD_INCORRECT(1021, "Please enter the password again!",HttpStatus.EXPECTATION_FAILED),
     EMAIL_INVALID(1022, "email not existed",HttpStatus.NOT_FOUND),
     EMAIL_ALREADY_EXISTED(1023, "email has been used" , HttpStatus.BAD_REQUEST),
-    EMAIL_UNVERIFIED(1024, "Email has not been verified. Please check your email to verify your account ",HttpStatus.EXPECTATION_FAILED)
+    EMAIL_UNVERIFIED(1024, "Email has not been verified. Please check your email to verify your account ",HttpStatus.EXPECTATION_FAILED),
+    EMAIL_BLANK(1025, "Email have not be blank",HttpStatus.BAD_REQUEST)
     ;
     int code;
     String message;

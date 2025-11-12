@@ -32,7 +32,7 @@ public class RegisterRequest {
     @Size(min =2, message = "INVALID_LASTNAME")
     String lastName;
 
-    @NotBlank(message = "Email is mandatory")
+    @NotBlank(message = "EMAIL_BLANK")
     @Email(message = "Email format is invalid")
     String email;
 

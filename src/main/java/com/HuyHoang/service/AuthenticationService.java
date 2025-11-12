@@ -72,9 +72,9 @@ public class AuthenticationService {
     UserMapper userMapper;
 
     PasswordEncoder passwordEncoder;
-    private final  AuthenticationManager authenticationManager;
-    private final RoleRepository roleRepository;
-    private final EmailService emailService;
+    final  AuthenticationManager authenticationManager;
+    final RoleRepository roleRepository;
+    final EmailService emailService;
 
 //    private final RedisTokenRepository redisTokenRepository;
     public LoginResponse login(LoginRequest request){
@@ -126,7 +126,7 @@ public class AuthenticationService {
 
 
 
-    public String registerWithEmailVerify(RegisterRequest request) {
+    public RegisterEmailVeirifyResponse registerWithEmailVerify(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
@@ -172,8 +172,10 @@ public class AuthenticationService {
         } catch (Exception e) {
             log.error("Error while sending email: {}", e.getMessage());
         }
-
-        return ("User registered. Please verify your email.");
+        return RegisterEmailVeirifyResponse.builder()
+                .userResponse(userMapper.toUserRespone(user))
+                .message("User registered. Please verify your email.")
+                .build();
     }
 
     private String generateEmailVerificationToken() {
@@ -185,7 +187,7 @@ public class AuthenticationService {
         return token.toString();
     }
 
-    public void verifyRegisterEmail(String email, String otp) {
+    public VerifyEmailResponse verifyRegisterEmail(String email, String otp) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Email not found"));
 
@@ -198,6 +200,10 @@ public class AuthenticationService {
             user.setEmailVerificationToken(null);
             user.setEmailVerificationTokenExpiryDate(null);
             userRepository.save(user);
+            return VerifyEmailResponse.builder()
+                    .userResponse(userMapper.toUserRespone(user))
+                    .message("Email verified successfully.")
+                    .build();
         } else {
             throw new RuntimeException("Invalid verification code");
         }
